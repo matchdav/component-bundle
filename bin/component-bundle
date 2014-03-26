@@ -73,8 +73,7 @@ var meta = JSON.parse(read('component.json', 'utf-8'));
  */
 
 
-var standalones = meta.standalone,
-    globalAlias = false;
+var standalones = meta.standalone;
 
 
 
@@ -127,7 +126,6 @@ batch.end(function (err) {
 
 function build(bundle, fn) {
   var dir = program.out + '/' + bundle;
-
   // builder
   mkdir.sync(dir);
   var builder = new Builder(process.cwd());
@@ -191,12 +189,17 @@ function build(bundle, fn) {
       // js
       js += obj.js;
 
+      // standalone is namespaced?
+
+      var alias = false;
       if(standalones && Object.keys(standalones).indexOf(name) > -1) {
-        globalAlias = standalones[name];
+        alias = standalones[name];
       }
 
-      if (program.standalone || globalAlias) js = amd(js, name);
       // standalone
+
+      if (program.standalone || alias) js = amd(js, name, alias);
+      
        
     }
 
@@ -259,17 +262,17 @@ function amd(js, global){
  * @return {String}
  */
 
-function expose(global){
+function expose(global, alias){
 
-  globalAlias = globalAlias || global;
-  
+  alias = alias || global;
+
   return [
     'if ("object" == typeof exports) {',
     '  module.exports = require("' + global + '");',
     '} else if ("function" == typeof define && define.amd) {',
     '  define(function(){ return require("' + global + '"); });',
     '} else {',
-    '  this["' + globalAlias + '"] = require("' + global + '");',
+    '  this["' + alias + '"] = require("' + global + '");',
     '}'
   ].join('\n');
 }
