@@ -69,6 +69,19 @@ if (!exists('component.json')) {
 var meta = JSON.parse(read('component.json', 'utf-8'));
 
 /**
+ * Standalone declarations
+ */
+
+
+var standalones = meta.standalone,
+    globalAlias = false;
+
+
+
+
+
+
+/**
  * mkdir
  */
 
@@ -170,14 +183,21 @@ function build(bundle, fn) {
         ? program.standalone
         : bundle;
 
+      
+      
       // require?
       if (program.require) js += obj.require;
 
       // js
       js += obj.js;
 
+      if(standalones && Object.keys(standalones).indexOf(name) > -1) {
+        globalAlias = standalones[name];
+      }
+
+      if (program.standalone || globalAlias) js = amd(js, name);
       // standalone
-      if (program.standalone) js = amd(js, name);
+       
     }
 
     // write js
@@ -240,13 +260,16 @@ function amd(js, global){
  */
 
 function expose(global){
+
+  globalAlias = globalAlias || global;
+  
   return [
     'if ("object" == typeof exports) {',
     '  module.exports = require("' + global + '");',
     '} else if ("function" == typeof define && define.amd) {',
     '  define(function(){ return require("' + global + '"); });',
     '} else {',
-    '  this["' + global + '"] = require("' + global + '");',
+    '  this["' + globalAlias + '"] = require("' + global + '");',
     '}'
   ].join('\n');
 }
